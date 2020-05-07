@@ -143,12 +143,19 @@ public class LogicManager
             ByteBuffer byteBuffer = new ByteBuffer();
             string jsonStr = JsonConvert.SerializeObject(opts[opts.Count - 1]);
             byteBuffer.AddString(jsonStr);
-            GameMain.GetInstance().netManager.srvConn.Send(byteBuffer);
-            Debug.Log("send opt");
+
+            if (NetManager.USE_FAKE_SERVER)
+            {
+                FakeServer.GetInstance().FakeSendOpt(byteBuffer);
+            }
+            else
+            {
+                GameMain.GetInstance().netManager.srvConn.Send(byteBuffer);
+            }
         }
         
 
-        //FakeServer.GetInstance().FakeSendOpts(opts);
+        
     }
     public void Handle(FrameOpt opt)
     {

@@ -43,7 +43,7 @@ public class FakeServer {
             return;
         }
         byte[] initMsgBytes = GetInitMsg();
-        SendMsg(initMsgBytes);
+        FakeSendMsg(initMsgBytes);
         isStartGame = true;
         MainTimer.Start();
 
@@ -70,7 +70,7 @@ public class FakeServer {
         byte[] lenBytes = BitConverter.GetBytes(byteBuffer.bytes.Length);
         byte[] bytes = lenBytes.Concat(byteBuffer.bytes).ToArray();
 
-        SendMsg(bytes);
+        FakeSendMsg(bytes);
     }
 
 
@@ -88,24 +88,27 @@ public class FakeServer {
     {
         ByteBuffer byteBuffer = new ByteBuffer();
         byteBuffer.AddInt((int)eNetMsgType.SYS);
+        byteBuffer.AddInt(0);
         byte[] lenBytes = BitConverter.GetBytes(byteBuffer.bytes.Length);
         byte[] bytes = lenBytes.Concat(byteBuffer.bytes).ToArray();
         return bytes;
     }
 
-    public void SendMsg(byte[] toSend)
-    {
-        FakeSendMsg(toSend);
-    }
-
+   
     private void FakeSendMsg(byte[] toSend)
     {
 
         GameMain.GetInstance().netManager.srvConn.FakeRecvMsg(toSend);
     }
 
-    public void FakeSendOpts(List<FrameOpt> opts)
+    public void FakeSendOpt(ByteBuffer buffer)
     {
+        int start = 0;
+        string jsonStr = buffer.GetString(start, ref start);
+        FrameOpt opt = JsonConvert.DeserializeObject<FrameOpt>(jsonStr);
+
+        int delay = UnityEngine.Random.Range(50,90);
+        
         System.Timers.Timer timer = new System.Timers.Timer();
 
         timer.Interval = delay;
@@ -113,9 +116,7 @@ public class FakeServer {
         timer.Enabled = true;
         timer.Elapsed += (sender, e) =>
         {
-
-            //Debug.Log("tick");
-            NowOpts.AddRange(opts);
+            NowOpts.Add(opt);
         };
     }
 

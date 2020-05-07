@@ -20,9 +20,13 @@ public class MainPanel : MonoBehaviour
         StartBtn = transform.Find("Button").GetComponent<Button>();
         StartBtn.onClick.AddListener(delegate()
         {
-            GameMain.GetInstance().netManager.TestConnect();
-            GameMain.GetInstance().netManager.SendLoginReq();
-            //FakeServer.GetInstance().StartGame();
+            if (NetManager.USE_FAKE_SERVER)
+            {
+                FakeServer.GetInstance().StartGame();
+            }else{
+                GameMain.GetInstance().netManager.TestConnect();
+                GameMain.GetInstance().netManager.SendLoginReq();
+            }
         });
     }
 
