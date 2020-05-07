@@ -9,6 +9,8 @@ public class PlayerController
     public LogicActor Pawn;
 
     public List<FrameOpt> CacheOpts = new List<FrameOpt>();
+
+
     public void Init()
     {
         inputModule = GameMain.GetInstance().inputModule;
@@ -22,7 +24,7 @@ public class PlayerController
             return;
         }
 
-        Vector2Int moveVec = Vector2Int.zero;
+        VInt2 moveVec = VInt2.zero;
         if (inputModule.isA)
         {
             moveVec.x -= 1;
@@ -41,7 +43,7 @@ public class PlayerController
         }
         if(moveVec.x == 0 && moveVec.y == 0)
         {
-            return;
+            //return;
         }
         FrameOpt moveOpt = new FrameOpt();
         moveOpt.actorId = Pawn.ActorId;

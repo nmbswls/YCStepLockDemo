@@ -34,5 +34,24 @@ public class InputModule
         {
             isD = true;
         }
+
+        //if (Input.GetKeyUp(KeyCode.W))
+        //{
+        //    isW = false;
+        //}
+        //if (Input.GetKeyUp(KeyCode.A))
+        //{
+        //    isA = false;
+        //}
+        //if (Input.GetKeyUp(KeyCode.S))
+        //{
+        //    isS = false;
+        //}
+        //if (Input.GetKeyUp(KeyCode.D))
+        //{
+        //    isD = false;
+        //}
+
+
     }
 }

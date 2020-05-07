@@ -12,6 +12,11 @@ public class NetFrameMsg : NetMsgBase
     public LogicFrame frame;
 }
 
+public class NetSysMsg : NetMsgBase
+{
+    public int localPid;
+}
+
 public enum eNetMsgType
 {
     SYS = 0,
@@ -23,6 +28,7 @@ public class MsgDispatcher
 {
     public int maxMsgPerFrame = 15;
 
+    //public Queue<NetMsgBase> msgList = new Queue<NetMsgBase>();
     public ConcurrentQueue<NetMsgBase> msgList = new ConcurrentQueue<NetMsgBase>();
     //委托类型
     public delegate void Delegate(NetMsgBase msg);
@@ -33,6 +39,7 @@ public class MsgDispatcher
     //Update
     public void Update()
     {
+        //Debug.Log("msg count "+ msgList.Count);
         for (int i = 0; i < maxMsgPerFrame; i++)
         {
             if (msgList.Count > 0)
@@ -43,6 +50,13 @@ public class MsgDispatcher
                 {
                     DispatchMsgEvent(msg);
                 }
+                //lock (msgList)
+                //{
+                //    NetMsgBase msg = msgList.Dequeue();
+                //    DispatchMsgEvent(msg);
+                //}
+                
+                
             }
             else
             {
@@ -54,8 +68,11 @@ public class MsgDispatcher
     //消息分发
     public void DispatchMsgEvent(NetMsgBase msg)
     {
+        Debug.Log("接收协议" + msg.MsgType.ToString());
+
         if(msg.MsgType == eNetMsgType.FRAME)
         {
+
             NetFrameMsg realMSg = (NetFrameMsg)msg;
             if(realMSg == null)
             {
@@ -66,7 +83,10 @@ public class MsgDispatcher
         }
         else if(msg.MsgType == eNetMsgType.SYS)
         {
-            GameMain.GetInstance().logicManager.Init();
+
+            Debug.Log("sys init");
+            NetSysMsg realMSg = (NetSysMsg)msg;
+            GameMain.GetInstance().logicManager.Init(realMSg.localPid);
         }
         //string name = protocol.GetName();
         //Debug.Log("分发处理消息 " + name);

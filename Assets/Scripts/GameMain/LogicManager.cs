@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Newtonsoft.Json;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -29,6 +30,11 @@ public class FrameOpt
     public int actorId = 0;
     public eOptType optType;
     public string optContent;
+
+    public string ToString()
+    {
+        return optType.ToString() + " " + optContent;
+    }
 }
 
 public class LogicManager
@@ -38,26 +44,28 @@ public class LogicManager
     public int frameIdx = 0;
     public int randomSeed = 0;
 
-    public int LogicTickRate = 10;
+    //public int LogicTickRate = 10;
     public int LocalTickRate = 60;
 
     public float LogicLastTickTime = 0;
     public float LogicCurTickTime = 0;
 
+
+
+    public int LastDtime;
     public BattleManager battleMgr = new BattleManager();
 
     public Dictionary<int, LogicActor> LogicActorMap = new Dictionary<int, LogicActor>();
     public List<LogicActor> LogicActorList = new List<LogicActor>();
     public Queue<LogicFrame> frames = new Queue<LogicFrame>();
 
-    private float logicTimer = 0.1f;
-    private static float LogicTickInterval = 0.1f;
+    //private float logicTimer = 0.1f;
+    //private static float LogicTickInterval = 0.1f;
     public static int MAX_LOGIC_FRAME_PER_TICK = 3; 
 
 
-    public void Init()
+    public void Init(int localPid)
     {
-        int localPid = 0;
         //get id
         battleMgr.Init(localPid);
 
@@ -65,7 +73,7 @@ public class LogicManager
 
     public void Update()
     {
-        logicTimer += Time.deltaTime;
+        //logicTimer += Time.deltaTime;
         int logicCount = 0;
         //三倍速在视图层处理 逻辑层只管会不会卡死
         while (/*logicTimer >= LogicTickInterval && */logicCount < MAX_LOGIC_FRAME_PER_TICK)
@@ -76,7 +84,7 @@ public class LogicManager
                 LogicUpdate(nowFrame);
                 LogicLastTickTime = LogicCurTickTime;
                 LogicCurTickTime = Time.time;
-                logicTimer -= LogicTickInterval;
+                //logicTimer -= LogicTickInterval;
                 logicCount += 1;
             }
             else
@@ -98,6 +106,7 @@ public class LogicManager
             Debug.Log("网络错误 爆炸");
         }
         this.frameIdx = frame.frameIdx;
+        this.LastDtime = frame.dtime;
 
         //Debug.Log("opt shu:" + frame.frameOpts.Count);
         //handle input
@@ -128,14 +137,25 @@ public class LogicManager
     public void SendLocalOpt()
     {
         List<FrameOpt> opts = GameMain.GetInstance().plyCtrl.GetOpts();
-        GameMain.GetInstance().netManager.FakeSendOpts(opts);
+        if (opts.Count > 0)
+        {
+            
+            ByteBuffer byteBuffer = new ByteBuffer();
+            string jsonStr = JsonConvert.SerializeObject(opts[opts.Count - 1]);
+            byteBuffer.AddString(jsonStr);
+            GameMain.GetInstance().netManager.srvConn.Send(byteBuffer);
+            Debug.Log("send opt");
+        }
+        
+
+        //FakeServer.GetInstance().FakeSendOpts(opts);
     }
     public void Handle(FrameOpt opt)
     {
         //Debug.Log("handle:");
         switch (opt.optType)
         {
-            case (int)eOptType.MVOE:
+            case eOptType.MVOE:
                 string optContent = opt.optContent;
                 //Debug.Log(realOpt.Velocity);
                 if(optContent != null)
@@ -145,7 +165,7 @@ public class LogicManager
                     {
                         string[] vString = optContent.Split(',');
 
-                        target.Volocity = new Vector2Int(int.Parse(vString[0]),int.Parse(vString[1]));
+                        target.Volocity = new VInt2(int.Parse(vString[0]),int.Parse(vString[1]));
                     }
                     
                 }

@@ -8,13 +8,24 @@ public class LogicActor
 
     public int ActorId = 0;
 
-    public Vector2Int LastPos;
-    public Vector2Int Pos;
+    public VInt2 LastPos;
+    public VInt2 Pos;
     public int Rotate;
 
-    public Vector2Int Volocity;
+    public int speed = 2; //格 每秒
+    public VInt2 Volocity;
     public int AnimateIdx;
     public int AnimateDict;//保存着各帧长度 用来模拟动画
+
+    public enum eState
+    {
+        IDLE,
+        MOVE,
+    }
+
+    public eState state;
+    
+    public VInt2 LogicDiff;
 
     private LogicManager mgr;
     public LogicActor()
@@ -30,12 +41,42 @@ public class LogicActor
 
     }
 
+    public int GetLogicDTime()
+    {
+        return mgr.LastDtime;
+    }
+
+    private void SwitchState(eState newState)
+    {
+        if (newState == state)
+        {
+            return;
+        }
+
+    }
+
     public void Update(int dtime)
     {
         LastPos = Pos;
-        Pos = LastPos + new Vector2Int(Volocity.x * dtime  * 2, Volocity.y * dtime  * 2);
+        //dtime 单位毫秒 speed 单位 多少（0.001）格 每（毫）秒
+        Vector2 dir = new Vector2(Volocity.x,Volocity.y);
+        VInt2 trueDir = (VInt2)(dir.normalized);
+        LogicDiff = new VInt2(trueDir.x * dtime * speed / 1000, trueDir.y * dtime * speed / 1000); //new VInt2(Volocity.x * dtime * speed, Volocity.y * dtime * speed);
 
-        Volocity = Vector2Int.zero;
+        if (Volocity.x == 0 && Volocity.y == 0)
+        {
+            SwitchState(eState.IDLE);
+        }
+        else
+        {
+            SwitchState(eState.MOVE);
+        }
+        //在这里 判断攻击打出来
+
+        //Volocity * dtime
+        Pos = LastPos + LogicDiff;
+
+        Volocity = VInt2.zero;
         if(viewActor != null)
         {
             List<Actor> ll = viewActor.contactActors;

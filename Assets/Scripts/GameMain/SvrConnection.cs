@@ -35,6 +35,12 @@ public class SvrConnection
     };
     public Status status = Status.None;
 
+    public void SendLoginReq()
+    {
+        ByteBuffer bytes = new ByteBuffer();
+        bytes.AddInt(0);
+        Send(bytes);
+    }
 
     //连接服务端
     public bool Connect(string host, int port)
@@ -50,7 +56,7 @@ public class SvrConnection
             socket.BeginReceive(readBuff, buffCount,
                       BUFFER_SIZE - buffCount, SocketFlags.None,
                       ReceiveCb, readBuff);
-            //Debug.Log("连接成功");
+            Debug.Log("连接成功");
             //状态
             status = Status.Connected;
             return true;
@@ -102,6 +108,8 @@ public class SvrConnection
         if (buffCount < sizeof(Int32))
             return;
 
+        
+
         Array.Copy(readBuff, lenBytes, sizeof(Int32));
         msgLength = BitConverter.ToInt32(lenBytes, 0);
         if (buffCount < msgLength + sizeof(Int32))
@@ -110,6 +118,7 @@ public class SvrConnection
         ByteBuffer buffer = new ByteBuffer(readBuff, sizeof(Int32), msgLength);
 
         NetMsgBase msg = ReadAndDecode(buffer);
+        Console.WriteLine("新消息");
         //Debug.Log("收到消息 " + protocol.GetDesc());
         //NetFrameMsg msg = new NetFrameMsg();
         //msg.MsgId = (int)eNetMsgType.FRAME;
@@ -128,7 +137,7 @@ public class SvrConnection
 
     
 
-    public bool Send(ByteBuffer protocol)
+    public bool Send(ByteBuffer byteBuffer)
     {
         if (status != Status.Connected)
         {
@@ -136,10 +145,12 @@ public class SvrConnection
             return true;
         }
 
-        byte[] b = protocol.bytes;
+        byte[] b = byteBuffer.bytes;
         byte[] length = BitConverter.GetBytes(b.Length);
 
         byte[] sendbuff = length.Concat(b).ToArray();
+
+
         socket.Send(sendbuff);
         //Debug.Log("发送消息 " + protocol.GetDesc());
         return true;
@@ -165,7 +176,7 @@ public class SvrConnection
         int msgType = byteBuffer.GetInt(start, ref start);
         if(msgType == (int)eNetMsgType.FRAME)
         {
-            string str = byteBuffer.GetString(start);
+            string str = byteBuffer.GetString(start, ref start);
             LogicFrame frame = JsonConvert.DeserializeObject<LogicFrame>(str);
             NetFrameMsg msg = new NetFrameMsg();
             msg.MsgType = (eNetMsgType)msgType;
@@ -174,8 +185,9 @@ public class SvrConnection
         }
         else
         {
-            NetMsgBase msg = new NetMsgBase();
+            NetSysMsg msg = new NetSysMsg();
             msg.MsgType = (eNetMsgType)msgType;
+            msg.localPid = byteBuffer.GetInt(start, ref start);
             return msg;
         }
 
