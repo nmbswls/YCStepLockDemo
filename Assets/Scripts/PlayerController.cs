@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Newtonsoft.Json;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -43,17 +44,14 @@ public class PlayerController
         }
         if(moveVec.x == 0 && moveVec.y == 0)
         {
-            //return;
+            return;
         }
         FrameOpt moveOpt = new FrameOpt();
         moveOpt.actorId = Pawn.ActorId;
         moveOpt.optType = eOptType.MVOE;
         moveOpt.optContent = moveVec.x + "," + moveVec.y;
 
-        
-        //Debug.Log("cache");
-        CacheOpts.Add(moveOpt);
-
+        Pawn.mgr.SendLocalOpt(moveOpt);
     }
 
 

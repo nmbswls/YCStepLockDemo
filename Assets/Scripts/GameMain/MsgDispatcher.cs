@@ -36,13 +36,18 @@ public class MsgDispatcher
     private Dictionary<string, Delegate> eventDict = new Dictionary<string, Delegate>();
     private Dictionary<string, Delegate> onceDict = new Dictionary<string, Delegate>();
 
+    private float fakeDelay = 0;
     //Update
     public void Update()
     {
+
+        
+
+
         //Debug.Log("msg count "+ msgList.Count);
         for (int i = 0; i < maxMsgPerFrame; i++)
         {
-            if (msgList.Count > 0)
+            if (!msgList.IsEmpty)
             {
                 NetMsgBase msg;
                 bool ret = msgList.TryDequeue(out msg);
@@ -50,13 +55,6 @@ public class MsgDispatcher
                 {
                     DispatchMsgEvent(msg);
                 }
-                //lock (msgList)
-                //{
-                //    NetMsgBase msg = msgList.Dequeue();
-                //    DispatchMsgEvent(msg);
-                //}
-                
-                
             }
             else
             {
@@ -68,7 +66,7 @@ public class MsgDispatcher
     //消息分发
     public void DispatchMsgEvent(NetMsgBase msg)
     {
-        Debug.Log("接收协议" + msg.MsgType.ToString());
+       // Debug.Log("接收协议" + msg.MsgType.ToString());
 
         if(msg.MsgType == eNetMsgType.FRAME)
         {

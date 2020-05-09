@@ -5,8 +5,15 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+
+
+
+
 public class NetManager
 {
+
+    public const bool USE_FAKE_SERVER = true;
+
     public SvrConnection srvConn = new SvrConnection();
     public void Update()
     {
@@ -27,11 +34,25 @@ public class NetManager
         srvConn.SendLoginReq();
     }
 
+    public void Send(ByteBuffer byteBuffer)
+    {
+        if (USE_FAKE_SERVER)
+        {
+            FakeServer.GetInstance().FakeReceiveMsg(byteBuffer);
+        }
+        else
+        {
+            srvConn.Send(byteBuffer);
+        }
+        
+    }
+
     //心跳
     public static ByteBuffer GetHeatBeatProtocol()
     {
         return new ByteBuffer();
     }
+
 
     
 

@@ -16,7 +16,7 @@ public class BattleManager
         ActorFactory.CreateNewActor("pawn");
         ActorFactory.CreateNewActor("pawn");
 
-        Debug.Log("local id:" + localPid);
+        //Debug.Log("local id:" + localPid);
         GameMain.GetInstance().plyCtrl.ChangePawn(GameMain.GetInstance().logicManager.GetActor(localPid));
     }
     public void Update(int dtime)

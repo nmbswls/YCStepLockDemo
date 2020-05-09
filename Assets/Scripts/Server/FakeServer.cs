@@ -17,9 +17,14 @@ public class FakeServer {
     public static float delay = 50;
 
     public LinkedList<LogicFrame> FrameList = new LinkedList<LogicFrame>();
-    public List<FrameOpt> NowOpts = new List<FrameOpt>();
 
     System.Timers.Timer MainTimer;
+
+
+    public Dictionary<int, int> plyLastFrameInfo = new Dictionary<int, int>(); //判断玩家掉线
+    public Dictionary<int, List<FrameOpt>> NowOpts = new Dictionary<int, List<FrameOpt>>();
+
+    public bool isDiaoxian = false;
 
     private FakeServer()
     {
@@ -29,9 +34,6 @@ public class FakeServer {
         MainTimer.Interval = TickInteval;
         MainTimer.AutoReset = true;
         MainTimer.Elapsed += new ElapsedEventHandler(MainTick);
-
-
-
     }
 
 
@@ -42,10 +44,18 @@ public class FakeServer {
         {
             return;
         }
-        byte[] initMsgBytes = GetInitMsg();
-        FakeSendMsg(initMsgBytes);
+
+        NowOpts[0] = new List<FrameOpt>();
+        plyLastFrameInfo[0] = 0;
+
+        ByteBuffer initMsgBuf = GetInitMsg();
+        FakeSendMsg(initMsgBuf);
         isStartGame = true;
+        
+        
         MainTimer.Start();
+
+
 
     }
 
@@ -53,24 +63,53 @@ public class FakeServer {
     {
         LogicFrame frame = new LogicFrame(FrameIdx++);
 
-        for (int i = 0; i < NowOpts.Count; i++)
+        foreach (var kv in plyLastFrameInfo)
         {
-            frame.frameOpts.Add(NowOpts[i]);
+            if( FrameIdx - kv.Value > 50 ){
+
+                //掉线
+                isDiaoxian = true;
+
+            }
+            else
+            {
+                isDiaoxian = false;
+            }
         }
-        NowOpts.Clear();
+
+        foreach (var kv in NowOpts)
+        {
+            if (kv.Value.Count == 0)
+            {
+                FrameOpt emptyOpt = new FrameOpt();
+                emptyOpt.actorId = kv.Key;
+                emptyOpt.optType = eOptType.MVOE;
+                emptyOpt.optContent = "0,0";
+                frame.frameOpts.Add(emptyOpt);
+
+                if (isDiaoxian)
+                {
+                    //伪造回家包
+                }
+            }
+            else
+            {
+                frame.frameOpts.Add(kv.Value[0]);
+            }
+            kv.Value.Clear();
+        }
+
         FrameList.AddLast(new LinkedListNode<LogicFrame>(frame));
         frame.dtime = (int)TickInteval;
+        
         //LinkedListNode<LogicFrame> node = FrameList.Last;
         //Debug.Log("svr frame:" + frame.frameIdx);
-
+        
         string ret = JsonConvert.SerializeObject(frame);
         ByteBuffer byteBuffer = new ByteBuffer();
         byteBuffer.AddInt((int)eNetMsgType.FRAME);
         byteBuffer.AddString(ret);
-        byte[] lenBytes = BitConverter.GetBytes(byteBuffer.bytes.Length);
-        byte[] bytes = lenBytes.Concat(byteBuffer.bytes).ToArray();
-
-        FakeSendMsg(bytes);
+        FakeSendMsg(byteBuffer);
     }
 
 
@@ -84,40 +123,76 @@ public class FakeServer {
     }
 
 
-    public byte[] GetInitMsg()
+    public ByteBuffer GetInitMsg()
     {
         ByteBuffer byteBuffer = new ByteBuffer();
         byteBuffer.AddInt((int)eNetMsgType.SYS);
         byteBuffer.AddInt(0);
-        byte[] lenBytes = BitConverter.GetBytes(byteBuffer.bytes.Length);
-        byte[] bytes = lenBytes.Concat(byteBuffer.bytes).ToArray();
-        return bytes;
+
+        return byteBuffer;
     }
 
    
-    private void FakeSendMsg(byte[] toSend)
+    private void FakeSendMsg(ByteBuffer byteBuffer)
     {
+
+        byte[] lenBytes = BitConverter.GetBytes(byteBuffer.bytes.Length);
+        byte[] toSend = lenBytes.Concat(byteBuffer.bytes).ToArray();
+
 
         GameMain.GetInstance().netManager.srvConn.FakeRecvMsg(toSend);
+
+        
     }
 
-    public void FakeSendOpt(ByteBuffer buffer)
+    public void FakeReceiveMsg(ByteBuffer buffer)
     {
-        int start = 0;
-        string jsonStr = buffer.GetString(start, ref start);
-        FrameOpt opt = JsonConvert.DeserializeObject<FrameOpt>(jsonStr);
-
-        int delay = UnityEngine.Random.Range(50,90);
-        
         System.Timers.Timer timer = new System.Timers.Timer();
 
         timer.Interval = delay;
         timer.AutoReset = false;
-        timer.Enabled = true;
-        timer.Elapsed += (sender, e) =>
+        
+
+        int start = 0;
+        int type = buffer.GetInt(start, ref start);
+        if (type == 0)
         {
-            NowOpts.Add(opt);
-        };
+            int frameIdx = buffer.GetInt(start, ref start);
+            timer.Elapsed += (sender, e) =>
+            {
+                GetNewTick(frameIdx);
+            };
+        }
+        else
+        {
+            string jsonStr = buffer.GetString(start, ref start);
+            FrameOpt opt = JsonConvert.DeserializeObject<FrameOpt>(jsonStr);
+
+            //Console.WriteLine("cnmcnm");
+
+            timer.Elapsed += (sender, e) =>
+            {
+                GetNewOpt(opt);
+            };
+        }
+        timer.Enabled = true;
+    }
+
+    private void GetNewOpt(FrameOpt opt)
+    {
+        List<FrameOpt> optList = NowOpts[0];
+
+        lock (optList)
+        {
+            optList.Clear();
+            optList.Add(opt);
+        }
+        
+    }
+
+    private void GetNewTick(int frameIdx)
+    {
+        plyLastFrameInfo[0] = frameIdx;
     }
 
 }

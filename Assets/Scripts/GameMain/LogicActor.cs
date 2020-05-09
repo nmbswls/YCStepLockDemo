@@ -27,7 +27,7 @@ public class LogicActor
     
     public VInt2 LogicDiff;
 
-    private LogicManager mgr;
+    public LogicManager mgr;
     public LogicActor()
     {
         mgr = GameMain.GetInstance().logicManager;
@@ -77,6 +77,19 @@ public class LogicActor
         Pos = LastPos + LogicDiff;
 
         Volocity = VInt2.zero;
+
+
+        if (viewActor != null)
+        {
+            viewActor.UpdateVec();
+        }
+        
+        
+        
+        
+        
+        
+        
         if(viewActor != null)
         {
             List<Actor> ll = viewActor.contactActors;

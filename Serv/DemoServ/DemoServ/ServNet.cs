@@ -181,6 +181,8 @@ namespace DemoServ
                 return;
             }
 
+            Console.WriteLine("get msg");
+
             ByteBuffer bytes = new ByteBuffer(conn.readBuff, sizeof(Int32), conn.msgLength);
             HandleMsg(conn, bytes);
             //清除已处理的消息
@@ -210,7 +212,7 @@ namespace DemoServ
                 int start = 0;
                 
                 string jsonStr = bytes.GetString(start, ref start);
-                //Console.WriteLine("get opt" + jsonStr);
+                Console.WriteLine("get opt" + jsonStr);
                 FrameOpt opt = JsonConvert.DeserializeObject<FrameOpt>(jsonStr);
                 gameManager.AddOpt(opt);
             }

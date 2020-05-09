@@ -83,6 +83,9 @@ public class SvrConnection
         }
     }
 
+
+    private string eMessage = "";
+
     //接收回调
     private void ReceiveCb(IAsyncResult ar)
     {
@@ -99,6 +102,7 @@ public class SvrConnection
         {
             Debug.Log("ReceiveCb失败:" + e.Message);
             status = Status.None;
+            eMessage = e.Message;
         }
     }
 
@@ -118,11 +122,6 @@ public class SvrConnection
         ByteBuffer buffer = new ByteBuffer(readBuff, sizeof(Int32), msgLength);
 
         NetMsgBase msg = ReadAndDecode(buffer);
-        Console.WriteLine("新消息");
-        //Debug.Log("收到消息 " + protocol.GetDesc());
-        //NetFrameMsg msg = new NetFrameMsg();
-        //msg.MsgId = (int)eNetMsgType.FRAME;
-        //msg.frame = logicFrame;
         msgDist.msgList.Enqueue(msg);
 
         int count = buffCount - msgLength - sizeof(Int32);
@@ -139,6 +138,8 @@ public class SvrConnection
 
     public bool Send(ByteBuffer byteBuffer)
     {
+        Debug.Log(eMessage);
+
         if (status != Status.Connected)
         {
             Debug.LogError("[Connection]还没链接就发送数据是不好的");
@@ -195,11 +196,13 @@ public class SvrConnection
 
     public void FakeRecvMsg(byte[] bytes)
     {
-        Array.Copy(bytes,0, readBuff, buffCount, bytes.Length);
+        
+        Array.Copy(bytes, 0, readBuff, buffCount, bytes.Length);
 
         int count = bytes.Length;
         buffCount = buffCount + count;
         ProcessData();
+        
     }
     public void Update()
     {

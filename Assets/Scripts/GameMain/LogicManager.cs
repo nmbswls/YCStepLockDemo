@@ -59,8 +59,9 @@ public class LogicManager
     public List<LogicActor> LogicActorList = new List<LogicActor>();
     public Queue<LogicFrame> frames = new Queue<LogicFrame>();
 
-    //private float logicTimer = 0.1f;
-    //private static float LogicTickInterval = 0.1f;
+    private float logicTimer = 0;
+    private static float LogicTickInterval = 0;
+
     public static int MAX_LOGIC_FRAME_PER_TICK = 3; 
 
 
@@ -73,10 +74,10 @@ public class LogicManager
 
     public void Update()
     {
-        //logicTimer += Time.deltaTime;
+        logicTimer += Time.deltaTime;
         int logicCount = 0;
         //三倍速在视图层处理 逻辑层只管会不会卡死
-        while (/*logicTimer >= LogicTickInterval && */logicCount < MAX_LOGIC_FRAME_PER_TICK)
+        while (logicTimer >= LogicTickInterval && logicCount < MAX_LOGIC_FRAME_PER_TICK)
         {
             if(frames.Count > 0)
             {
@@ -84,7 +85,7 @@ public class LogicManager
                 LogicUpdate(nowFrame);
                 LogicLastTickTime = LogicCurTickTime;
                 LogicCurTickTime = Time.time;
-                //logicTimer -= LogicTickInterval;
+                logicTimer -= LogicTickInterval;
                 logicCount += 1;
             }
             else
@@ -103,8 +104,10 @@ public class LogicManager
         if(frame.frameIdx != this.frameIdx + 1)
         {
             Debug.Log(this.frameIdx + "  " + frame.frameIdx);
-            Debug.Log("网络错误 爆炸");
+            Debug.Log("zhenshu错误 丢弃");
+            return;
         }
+        
         this.frameIdx = frame.frameIdx;
         this.LastDtime = frame.dtime;
 
@@ -128,37 +131,38 @@ public class LogicManager
         }
 
         //发送本机的命令
-        SendLocalOpt();
-        
+        //SendLocalOpt();
 
+        SendAck();
 
     }
 
-    public void SendLocalOpt()
+
+    public void SendAck()
     {
-        List<FrameOpt> opts = GameMain.GetInstance().plyCtrl.GetOpts();
-        if (opts.Count > 0)
-        {
-            
-            ByteBuffer byteBuffer = new ByteBuffer();
-            string jsonStr = JsonConvert.SerializeObject(opts[opts.Count - 1]);
-            byteBuffer.AddString(jsonStr);
+        ByteBuffer byteBuffer = new ByteBuffer();
+        byteBuffer.AddInt(0);
+        byteBuffer.AddInt(frameIdx);
 
-            if (NetManager.USE_FAKE_SERVER)
-            {
-                FakeServer.GetInstance().FakeSendOpt(byteBuffer);
-            }
-            else
-            {
-                GameMain.GetInstance().netManager.srvConn.Send(byteBuffer);
-            }
-        }
-        
+        GameMain.GetInstance().netManager.Send(byteBuffer);
+    }
 
-        
+    public void SendLocalOpt(FrameOpt opt)
+    {
+
+        ByteBuffer byteBuffer = new ByteBuffer();
+        byteBuffer.AddInt(1);
+        string jsonStr = JsonConvert.SerializeObject(opt);
+        byteBuffer.AddString(jsonStr);
+
+        GameMain.GetInstance().netManager.Send(byteBuffer);
     }
     public void Handle(FrameOpt opt)
     {
+        if (opt == null)
+        {
+            Debug.Log("why null?");
+        }
         //Debug.Log("handle:");
         switch (opt.optType)
         {
@@ -185,7 +189,8 @@ public class LogicManager
 
     public void AddNewFrame(LogicFrame newFrame)
     {
-        frames.Enqueue(newFrame);
+         frames.Enqueue(newFrame);
+        
     }
 
     public void AddActor(LogicActor logicActor)

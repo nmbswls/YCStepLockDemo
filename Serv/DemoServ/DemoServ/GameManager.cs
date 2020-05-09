@@ -126,7 +126,7 @@ namespace DemoServ
         {
             for (int i = 0; i < GamePlayerList.Count; i++)
             {
-                Console.WriteLine("准备发送" + GamePlayerList[i].idx);
+                //Console.WriteLine("准备发送" + GamePlayerList[i].idx);
                 SendMsg(GamePlayerList[i], byteBuffer);
             }
         }
